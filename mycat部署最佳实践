@@ -1,0 +1,143 @@
+
+1、mycat官网下载软件包
+http://www.mycat.io/
+http://dl.mycat.org.cn/
+
+如果mycat网站因某些原因不能访问，使用百度云盘下载地址
+链接: https://pan.baidu.com/s/1QIb-R0utL_-KqKkVH4PHvQ 提取码: uf9w
+
+2、上传并解压mycat
+# cd /root
+# gunzip Mycat-server-1.6.7.3-release-20210913163959-linux.tar.gz 
+# tar -xvf Mycat-server-1.6.7.3-release-20210913163959-linux.tar 
+
+3、配置mycat环境变量
+# cd /root/mycat/bin
+# ./mycat -h
+# vi /etc/profile
+export PATH=/mysql57/app/mysql/bin:/root/mycat/bin:$PATH
+# su -
+# which mycat
+
+4、启动mycat服务
+# mycat start
+# more wrapper.log 
+STATUS | wrapper  | 2025/04/17 18:18:39 | --> Wrapper Started as Daemon
+STATUS | wrapper  | 2025/04/17 18:18:39 | Launching a JVM...
+ERROR  | wrapper  | 2025/04/17 18:18:39 | Unable to start JVM: No such file or directory (2)
+ERROR  | wrapper  | 2025/04/17 18:18:39 | JVM exited while loading the application.
+STATUS | wrapper  | 2025/04/17 18:18:43 | Launching a JVM...
+ERROR  | wrapper  | 2025/04/17 18:18:43 | Unable to start JVM: No such file or directory (2)
+ERROR  | wrapper  | 2025/04/17 18:18:43 | JVM exited while loading the application.
+STATUS | wrapper  | 2025/04/17 18:18:47 | Launching a JVM...
+ERROR  | wrapper  | 2025/04/17 18:18:47 | Unable to start JVM: No such file or directory (2)
+ERROR  | wrapper  | 2025/04/17 18:18:47 | JVM exited while loading the application.
+STATUS | wrapper  | 2025/04/17 18:18:51 | Launching a JVM...
+ERROR  | wrapper  | 2025/04/17 18:18:51 | Unable to start JVM: No such file or directory (2)
+ERROR  | wrapper  | 2025/04/17 18:18:51 | JVM exited while loading the application.
+STATUS | wrapper  | 2025/04/17 18:18:55 | Launching a JVM...
+ERROR  | wrapper  | 2025/04/17 18:18:55 | Unable to start JVM: No such file or directory (2)
+ERROR  | wrapper  | 2025/04/17 18:18:55 | JVM exited while loading the application.
+FATAL  | wrapper  | 2025/04/17 18:18:55 | There were 5 failed launches in a row, each lasting less than 300 seconds.  Giving up.
+FATAL  | wrapper  | 2025/04/17 18:18:55 |   There may be a configuration problem: please check the logs.
+STATUS | wrapper  | 2025/04/17 18:18:55 | <-- Wrapper Stopped
+
+5、准备java环境
+配置本地yum源
+# vi /etc/yum.repos.d/yum.repo 
+[base]
+Name=base
+Baseurl=file:///mnt
+Enabled=1
+Gpgcheck=0
+
+# mount -o loop /mysql57/CentOS-7-x86_64-DVD-2009.iso /mnt
+# yum install -y java-1.8.0-openjdk-devel
+# java -version
+
+6、再次启动mycat
+# mycat status
+# mycat start
+INFO   | jvm 1    | 2025/04/17 18:57:04 | WrapperSimpleApp: Encountered an error running main: java.lang.OutOfMemoryError: Direct buffer memory
+INFO   | jvm 1    | 2025/04/17 18:57:04 | java.lang.OutOfMemoryError: Direct buffer memory
+INFO   | jvm 1    | 2025/04/17 18:57:04 |       at java.nio.Bits.reserveMemory(Bits.java:695)
+INFO   | jvm 1    | 2025/04/17 18:57:04 |       at java.nio.DirectByteBuffer.<init>(DirectByteBuffer.java:123)
+INFO   | jvm 1    | 2025/04/17 18:57:04 |       at java.nio.ByteBuffer.allocateDirect(ByteBuffer.java:311)
+INFO   | jvm 1    | 2025/04/17 18:57:04 |       at io.mycat.buffer.DirectByteBufferPool.<init>(DirectByteBufferPool.java:47)
+INFO   | jvm 1    | 2025/04/17 18:57:04 |       at io.mycat.MycatServer.startup(MycatServer.java:352)
+INFO   | jvm 1    | 2025/04/17 18:57:04 |       at io.mycat.MycatStartup.main(MycatStartup.java:58)
+INFO   | jvm 1    | 2025/04/17 18:57:04 |       at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+INFO   | jvm 1    | 2025/04/17 18:57:04 |       at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+INFO   | jvm 1    | 2025/04/17 18:57:04 |       at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+INFO   | jvm 1    | 2025/04/17 18:57:04 |       at java.lang.reflect.Method.invoke(Method.java:498)
+INFO   | jvm 1    | 2025/04/17 18:57:04 |       at org.tanukisoftware.wrapper.WrapperSimpleApp.run(WrapperSimpleApp.java:240)
+INFO   | jvm 1    | 2025/04/17 18:57:04 |       at java.lang.Thread.run(Thread.java:748)
+STATUS | wrapper  | 2025/04/17 18:57:06 | <-- Wrapper Stopped
+
+7、解决mycat JVM内存OOM问题
+# cd /root/mycat/conf
+# vi wrapper.conf
+wrapper.java.additional.5=-XX:MaxDirectMemorySize=4G
+...
+wrapper.java.additional.XX:MaxDirectMemorySize=4G
+
+8、第三次启动mycat
+# mycat status
+# mycat start
+INFO   | jvm 1    | 2025/04/17 19:03:39 | MyCAT Server startup successfully. see logs in logs/mycat.log
+
+9、检查端口并验证连接
+# netstat -an|grep 8066
+# lsof -i:8066
+# ps -ef|grep 61929
+# mysql -h 192.168.42.156 -P 8066 -uroot -pmysql
+
+
+二、准备后端MySQL环境
+1、MySQL初始化
+# cd /mysql57/
+# sh LocalAutoInstall_Linux6-7_MySQL5.5-8.0_v1.5.5.sh -c utf8mb4 -d /mysql57 -f mysql-5.7.43-linux-glibc2.12-x86_64.tar.gz -i 192.168.42.156 -I 1 -p 3306 -s 10 -S 10
+
+2、配置环境变量和快捷链接
+# vi /etc/profile
+export PATH=/mysql57/app/mysql/bin:/root/mycat/bin:$PATH
+# su -
+# vi /usr/bin/mysql57
+mysql -uroot -pmysql -S /mysql57/app/mysqldb/data/mysql.sock
+# chmod +x /usr/bin/mysql57
+# which mysql57
+# mysql57
+
+3、创建mycat所需连接用户
+create user root@'%' identified by 'mysql';
+grant all privileges on *.* to root@'%';
+
+create user user@'%' identified by 'mysql';
+grant all privileges on *.* to user@'%';
+
+select user,host from mysql.user;
+
+三、测试建立mycat连接
+1、修改 schema.xml 和 server.xml
+# ./1.sh schema.xml.test 
+# ./1.sh server.xml.test 
+
+2、重启mycat并连接
+# mycat restart
+# mycat status
+# mysql -h 192.168.42.156 -P 8066 -uroot -pmysql
+# mysql -h 192.168.42.156 -P 8066 -uroot -pmysql
+
+3、配置mycat快捷连接
+# vi /usr/bin/mycat57
+mysql -h 192.168.42.156 -P 8066 -uroot -pmysql
+# chmod +x /usr/bin/mycat57
+# mycat57
+
+
+
+
+
+
+
+
